@@ -158,8 +158,21 @@
 
   <!-- JavaScript：ボタンを押したときの動きを決めます。 -->
   <script>
-    // 最初の数字は0です。ページを開き直したときも0に戻ります。
+    // このブラウザーに保存した数字を、ページを開いたときに復元します。
+    const STORAGE_KEY = 'click-counter-count';
+    const hint = document.querySelector('.hint');
+    const defaultHint = hint.textContent;
     let count = 0;
+
+    try {
+      const savedCount = Number(localStorage.getItem(STORAGE_KEY));
+      if (Number.isSafeInteger(savedCount) && savedCount >= 0) {
+        count = savedCount;
+      }
+    } catch {
+      hint.textContent = '保存した数字を読み込めませんでした。0から始めます。';
+    }
+
     const countDisplay = document.getElementById('count');
     const incrementButton = document.getElementById('increment');
     const decrementButton = document.getElementById('decrement');
@@ -171,10 +184,23 @@
       decrementButton.disabled = count === 0;
     }
 
+    // 操作のたびに数字を保存します。リセットした0も保存します。
+    function saveCount() {
+      try {
+        localStorage.setItem(STORAGE_KEY, String(count));
+        hint.textContent = defaultHint;
+      } catch {
+        hint.textContent = '数字を保存できません。画面を閉じると今回の変更が失われます。';
+      }
+    }
+
     // 「＋1増やす」を押すと、数字を1増やして画面を更新します。
     incrementButton.addEventListener('click', () => {
-      count += 1;
+      if (count < Number.MAX_SAFE_INTEGER) {
+        count += 1;
+      }
       updateDisplay();
+      saveCount();
     });
 
     // 「−1減らす」を押すと1減らします。0未満にはしません。
@@ -183,12 +209,14 @@
         count -= 1;
       }
       updateDisplay();
+      saveCount();
     });
 
     // 「リセット」を押すと、数字を0に戻して画面を更新します。
     resetButton.addEventListener('click', () => {
       count = 0;
       updateDisplay();
+      saveCount();
     });
 
     // 最初の表示と、減らすボタンの状態をそろえます。
